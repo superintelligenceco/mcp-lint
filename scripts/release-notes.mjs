@@ -17,4 +17,5 @@ if (start === -1) {
 }
 let end = lines.findIndex((l, i) => i > start && l.startsWith("## "));
 if (end === -1) end = lines.length;
-process.stdout.write(`${lines.slice(start + 1, end).join("\n").trim()}\n`);
+const notes = lines.slice(start + 1, end).join("\n").trim();
+process.stdout.write(`${notes}\n`);
