@@ -35,10 +35,16 @@ describe("computeScore", () => {
   });
 
   it("averages entity scores", () => {
-    // a: 100 - 25 - 8 = 67, b: 100 -> mean 83.5 -> 84
+    // a: 100 - 25 - 8 = 67, b: 100 -> mean 83.5 -> 83
     const { score, entities } = computeScore(s, [finding("a", "error"), finding("a", "warning")]);
-    expect(score).toBe(84);
+    expect(score).toBe(83);
     expect(entities.find((e) => e.name === "a")?.score).toBe(67);
+  });
+
+  it("never gives 100 when there is a finding", () => {
+    const tools = Array.from({ length: 30 }, (_, i) => goodTool({ name: `t${i}` }));
+    const { score } = computeScore(snap({ tools }), [finding("t0", "info")]);
+    expect(score).toBe(99);
   });
 
   it("floors an entity at zero", () => {

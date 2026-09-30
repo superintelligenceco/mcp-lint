@@ -56,7 +56,8 @@ export function computeScore(
 
   const list = [...entities.values()];
   const mean = list.length === 0 ? 100 : list.reduce((sum, e) => sum + e.score, 0) / list.length;
-  let score = Math.max(0, Math.round(mean - serverPenalty));
+  // Floor, not round: a server with any finding must not reach a perfect 100.
+  let score = Math.max(0, Math.floor(mean - serverPenalty));
   if (findings.some((f) => f.severity === "error" && f.ruleId.startsWith("injection/"))) {
     score = Math.min(score, INJECTION_CAP);
   }
