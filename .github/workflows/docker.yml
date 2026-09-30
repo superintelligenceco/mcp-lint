@@ -1,0 +1,99 @@
+name: Docker
+
+# Builds the container image, runs it against the fixture MCP server over stdio and HTTP, and
+# scans it with Trivy. Ship publishes the multi-arch image to GHCR when you push a v* tag.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "41 5 * * 2"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docker-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  image:
+    name: Build, test, and scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install fixture server dependencies
+        run: npm ci
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - name: Build the image
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          load: true
+          tags: mcp-lint:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Lint a saved snapshot
+        run: |
+          docker run --rm mcp-lint:test --version
+          docker run --rm -v "$PWD/examples/messy-server.json:/work/messy.json:ro" \
+            mcp-lint:test --file messy.json --min-score 0 --format json > messy-report.json
+          jq -e '.grade == "F" and .counts.error > 0' messy-report.json
+
+      - name: Lint the fixture server over stdio
+        run: |
+          docker run --rm -v "$PWD:/repo:ro" \
+            mcp-lint:test --format json -- node /repo/test/fixtures/server.mjs clean > clean.json
+          jq -e '.grade == "A" and .passed' clean.json
+
+      - name: Lint the fixture server over Streamable HTTP
+        run: |
+          node test/fixtures/server.mjs messy --http 3917 > server.log &
+          for _ in $(seq 50); do grep -q listening server.log && break; sleep 0.2; done
+          docker run --rm --network host \
+            mcp-lint:test --url http://127.0.0.1:3917/mcp --min-score 0 --format json > http.json
+          jq -e '.grade == "F" and .inventory.tools > 0' http.json
+
+      - name: Check the exit code below the minimum score
+        run: |
+          set +e
+          docker run --rm -v "$PWD/examples/messy-server.json:/work/messy.json:ro" \
+            mcp-lint:test --file messy.json --no-color
+          code=$?
+          set -e
+          test "$code" = "1"
+
+      - name: Trivy scan (SARIF)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: mcp-lint:test
+          format: sarif
+          output: trivy.sarif
+          ignore-unfixed: true
+      - name: Upload Trivy results
+        if: ${{ github.event_name != 'pull_request' }}
+        uses: github/codeql-action/upload-sarif@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4.38.2
+        with:
+          sarif_file: trivy.sarif
+          category: trivy
+      - name: Fail on critical vulnerabilities
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: mcp-lint:test
+          format: table
+          exit-code: "1"
+          ignore-unfixed: true
+          severity: CRITICAL
+          skip-setup-trivy: true
