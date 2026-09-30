@@ -1,0 +1,138 @@
+name: mcp-lint
+description: Lint and grade an MCP server, upload SARIF to code scanning, and fail below a minimum score.
+author: superintelligenceco contributors
+branding:
+  icon: check-circle
+  color: green
+
+inputs:
+  command:
+    description: Command line that starts a stdio MCP server, for example `node dist/server.js`.
+    required: false
+    default: ""
+  url:
+    description: URL of a Streamable HTTP or HTTP+SSE MCP server.
+    required: false
+    default: ""
+  headers:
+    description: HTTP headers for `url`, one `Name: value` per line.
+    required: false
+    default: ""
+  file:
+    description: Path to a saved `tools/list` result or mcp-lint snapshot.
+    required: false
+    default: ""
+  config:
+    description: Path to an mcp-lint config file. Defaults to `.mcp-lint.json` when present.
+    required: false
+    default: ""
+  min-score:
+    description: Fail when the score is below this value. Defaults to the config value, or 70.
+    required: false
+    default: ""
+  sarif-file:
+    description: Where to write the SARIF report.
+    required: false
+    default: mcp-lint.sarif
+  sarif-uri:
+    description: Repository file that SARIF results point at when linting a live server.
+    required: false
+    default: ""
+  upload-sarif:
+    description: Upload the SARIF report to GitHub code scanning. Requires `security-events: write`.
+    required: false
+    default: "false"
+  node-version:
+    description: Node.js version used to run mcp-lint.
+    required: false
+    default: "22"
+
+outputs:
+  score:
+    description: Score from 0 to 100.
+    value: ${{ steps.lint.outputs.score }}
+  grade:
+    description: Letter grade, A to F.
+    value: ${{ steps.lint.outputs.grade }}
+  passed:
+    description: "`true` when the score meets the minimum."
+    value: ${{ steps.lint.outputs.passed }}
+  sarif-file:
+    description: Path of the SARIF report.
+    value: ${{ inputs.sarif-file }}
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Node.js
+      uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      with:
+        node-version: ${{ inputs.node-version }}
+
+    - name: Build mcp-lint
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      run: |
+        npm ci --no-audit --no-fund --loglevel=error
+        npm run build
+
+    - name: Run mcp-lint
+      id: lint
+      shell: bash
+      env:
+        INPUT_COMMAND: ${{ inputs.command }}
+        INPUT_URL: ${{ inputs.url }}
+        INPUT_HEADERS: ${{ inputs.headers }}
+        INPUT_FILE: ${{ inputs.file }}
+        INPUT_CONFIG: ${{ inputs.config }}
+        INPUT_MIN_SCORE: ${{ inputs.min-score }}
+        INPUT_SARIF_FILE: ${{ inputs.sarif-file }}
+        INPUT_SARIF_URI: ${{ inputs.sarif-uri }}
+        CLI: ${{ github.action_path }}/dist/cli.js
+      run: |
+        args=()
+        if [ -n "$INPUT_FILE" ]; then args+=(--file "$INPUT_FILE"); fi
+        if [ -n "$INPUT_URL" ]; then args+=(--url "$INPUT_URL"); fi
+        if [ -n "$INPUT_COMMAND" ]; then args+=(--stdio "$INPUT_COMMAND"); fi
+        if [ -n "$INPUT_CONFIG" ]; then args+=(--config "$INPUT_CONFIG"); fi
+        if [ -n "$INPUT_MIN_SCORE" ]; then args+=(--min-score "$INPUT_MIN_SCORE"); fi
+        if [ -n "$INPUT_SARIF_URI" ]; then args+=(--sarif-uri "$INPUT_SARIF_URI"); fi
+        while IFS= read -r header; do
+          if [ -n "$header" ]; then args+=(--header "$header"); fi
+        done <<< "$INPUT_HEADERS"
+
+        report="$RUNNER_TEMP/mcp-lint-report.json"
+        summary="$RUNNER_TEMP/mcp-lint-summary.md"
+        set +e
+        node "$CLI" "${args[@]}" --json "$report" --markdown "$summary" --sarif "$INPUT_SARIF_FILE"
+        code=$?
+        set -e
+
+        if [ -f "$summary" ]; then cat "$summary" >> "$GITHUB_STEP_SUMMARY"; fi
+        if [ -f "$report" ]; then
+          node -e '
+            const r = JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8"));
+            console.log(`score=${r.score}\ngrade=${r.grade}\npassed=${r.passed}`);
+          ' "$report" >> "$GITHUB_OUTPUT"
+        fi
+        echo "exit-code=$code" >> "$GITHUB_OUTPUT"
+
+    - name: Upload SARIF
+      if: ${{ always() && inputs.upload-sarif == 'true' && hashFiles(inputs.sarif-file) != '' }}
+      uses: github/codeql-action/upload-sarif@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4.38.2
+      with:
+        sarif_file: ${{ inputs.sarif-file }}
+        category: mcp-lint
+
+    - name: Check result
+      if: ${{ steps.lint.outputs.exit-code != '0' }}
+      shell: bash
+      env:
+        EXIT_CODE: ${{ steps.lint.outputs.exit-code }}
+      run: |
+        if [ "$EXIT_CODE" = "1" ]; then
+          echo "::error title=mcp-lint::Score is below the minimum. See the job summary for findings."
+        else
+          echo "::error title=mcp-lint::mcp-lint could not run. See the log above."
+        fi
+        exit "$EXIT_CODE"
