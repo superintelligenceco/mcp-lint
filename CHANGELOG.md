@@ -2,8 +2,7 @@
 
 All notable changes to this project are documented in this file. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
-[Semantic Versioning](https://semver.org/spec/v2.0.0.html). release-please maintains this file
-from Conventional Commits starting after 0.1.0.
+[Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.1.0](https://github.com/superintelligenceco/mcp-lint/releases/tag/v0.1.0) (2026-09-30)
 
