@@ -25,7 +25,7 @@ jobs:
       - run: npm ci && npm run build
       - name: Lint the MCP server
         id: lint
-        uses: superintelligenceco/mcp-lint@v0.1.0
+        uses: superintelligenceco/mcp-lint@v0.2.0
         with:
           command: node dist/server.js
           min-score: "80"

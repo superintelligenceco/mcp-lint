@@ -4,6 +4,21 @@ All notable changes to this project are documented in this file. The format foll
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0](https://github.com/superintelligenceco/mcp-lint/releases/tag/v0.2.0) (2026-09-30)
+
+### Features
+
+- Publish to npm as `@superintelligenceco/mcp-lint`, with npm provenance.
+- Ship standalone executables for Linux (x64, arm64), macOS (x64, arm64), and Windows (x64), an
+  `install.sh` installer, and a multi-arch container image on GHCR signed with cosign.
+- Attach SPDX SBOMs, `SHA256SUMS`, and build provenance attestations to every release.
+- Add a documentation site on GitHub Pages with an FAQ, architecture notes, and decision records.
+
+### Continuous integration
+
+- Add OpenSSF Scorecard, dependency review, a link check, actionlint, a benchmark gate, a nightly
+  run, and scheduled mutation testing.
+
 ## [0.1.0](https://github.com/superintelligenceco/mcp-lint/releases/tag/v0.1.0) (2026-09-30)
 
 The first release of `mcp-lint`, a CLI and GitHub Action that lints and grades Model Context

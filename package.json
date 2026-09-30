@@ -1,6 +1,6 @@
 {
-  "name": "mcp-lint",
-  "version": "0.1.0",
+  "name": "@superintelligenceco/mcp-lint",
+  "version": "0.2.0",
   "description": "Lint and grade Model Context Protocol (MCP) servers: schemas, descriptions, prompt-injection surfaces, and dangerous capabilities.",
   "keywords": [
     "mcp",
@@ -17,7 +17,7 @@
     "type": "git",
     "url": "git+https://github.com/superintelligenceco/mcp-lint.git"
   },
-  "homepage": "https://github.com/superintelligenceco/mcp-lint#readme",
+  "homepage": "https://superintelligenceco.github.io/mcp-lint/",
   "bugs": "https://github.com/superintelligenceco/mcp-lint/issues",
   "type": "module",
   "bin": {

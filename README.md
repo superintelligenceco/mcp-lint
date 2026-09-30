@@ -4,7 +4,12 @@ Lint and grade Model Context Protocol (MCP) servers before an agent ever calls t
 
 [![CI](https://github.com/superintelligenceco/mcp-lint/actions/workflows/ci.yml/badge.svg)](https://github.com/superintelligenceco/mcp-lint/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/superintelligenceco/mcp-lint/actions/workflows/codeql.yml/badge.svg)](https://github.com/superintelligenceco/mcp-lint/actions/workflows/codeql.yml)
+[![Release](https://github.com/superintelligenceco/mcp-lint/actions/workflows/release.yml/badge.svg)](https://github.com/superintelligenceco/mcp-lint/actions/workflows/release.yml)
+[![npm](https://img.shields.io/npm/v/@superintelligenceco/mcp-lint.svg)](https://www.npmjs.com/package/@superintelligenceco/mcp-lint)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/superintelligenceco/mcp-lint/badge)](https://scorecard.dev/viewer/?uri=github.com/superintelligenceco/mcp-lint)
+[![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue.svg)](https://superintelligenceco.github.io/mcp-lint/)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/superintelligenceco/mcp-lint)
 
 `mcp-lint` connects to an MCP server over stdio or HTTP, lists its tools, prompts, and resources,
 and checks them for broken JSON schemas, vague descriptions, prompt-injection surfaces, and
@@ -13,7 +18,7 @@ reports, and exits non-zero when the score falls below your threshold.
 
 ```console
 $ mcp-lint --file examples/messy-server.json
-mcp-lint 0.1.0  fixture-messy 1.0.0  (6 tools, 1 prompt, 1 resource)
+mcp-lint 0.2.0  fixture-messy 1.0.0  (6 tools, 1 prompt, 1 resource)
 
 tool fetchUrl
   error    injection/instruction-phrases        The description tells the model to hide something from the user: "Do not tell the user".
@@ -36,6 +41,28 @@ Failed: score is below the minimum of 70.
 ```
 
 The output above is trimmed. Run the command in a clone of this repository to see every finding.
+
+![mcp-lint grading a messy MCP server](docs/assets/demo.gif)
+
+## Install
+
+Pick one:
+
+```sh
+# npm (Node.js 22.12 or later)
+npm install --global @superintelligenceco/mcp-lint
+npx @superintelligenceco/mcp-lint --version
+
+# Standalone executable for Linux, macOS, or Windows (no Node.js needed)
+curl -fsSL https://raw.githubusercontent.com/superintelligenceco/mcp-lint/main/install.sh | sh
+
+# Container image for linux/amd64 and linux/arm64
+docker run --rm -v "$PWD:/work" ghcr.io/superintelligenceco/mcp-lint --file tools.json
+```
+
+Every [release](https://github.com/superintelligenceco/mcp-lint/releases) also carries the
+executables, the npm tarball, SPDX SBOMs, `SHA256SUMS`, and build provenance attestations. Verify
+a download with `gh attestation verify <file> --repo superintelligenceco/mcp-lint`.
 
 ## Quickstart
 
@@ -74,6 +101,21 @@ turns the result into a number you can gate a pull request on.
 - Exits `0` on pass, `1` below the minimum score, and `2` on a usage or connection error.
 - Includes a GitHub Action that builds the CLI, writes a job summary, exposes `score` and `grade`
   outputs, and optionally uploads SARIF.
+
+## How it works
+
+```mermaid
+flowchart LR
+    A["stdio, HTTP, or SSE server"] --> C["Collect snapshot"]
+    B["Saved tools/list JSON"] --> C
+    C --> R["21 rules"]
+    R --> S["Score and grade"]
+    S --> O["text, JSON, Markdown, SARIF"]
+    S --> E{{"exit 0, 1, or 2"}}
+```
+
+Read the [architecture page](https://superintelligenceco.github.io/mcp-lint/architecture/) for
+the details.
 
 ## Usage
 
@@ -131,7 +173,7 @@ permissions:
 
 steps:
   - uses: actions/checkout@v7
-  - uses: superintelligenceco/mcp-lint@v0.1.0
+  - uses: superintelligenceco/mcp-lint@v0.2.0
     with:
       command: node dist/server.js
       min-score: "80"
@@ -217,7 +259,7 @@ error, the score is capped at 50.
 ## Library use
 
 ```ts
-import { lint, readSnapshotFile } from "mcp-lint";
+import { lint, readSnapshotFile } from "@superintelligenceco/mcp-lint";
 
 const { snapshot } = readSnapshotFile("tools.json");
 const result = lint(snapshot);
@@ -226,7 +268,6 @@ console.log(result.score, result.grade, result.findings.length);
 
 ## Roadmap
 
-- Publish to npm so `npx mcp-lint` works without a clone.
 - Inline suppressions for a single finding, with a required reason.
 - Rules for tool output: lint `structuredContent` against `outputSchema` from a sample call.
 - Checks for resource and prompt content, not only their metadata.
