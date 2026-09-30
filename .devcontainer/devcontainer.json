@@ -1,0 +1,19 @@
+{
+  "name": "mcp-lint",
+  "image": "mcr.microsoft.com/devcontainers/typescript-node:22-bookworm",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+    "ghcr.io/devcontainers/features/python:1": {}
+  },
+  "postCreateCommand": "npm ci && npm run build && pip install --user pre-commit && pre-commit install",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "biomejs.biome",
+        "vitest.explorer",
+        "github.vscode-github-actions",
+        "redhat.vscode-yaml"
+      ]
+    }
+  }
+}

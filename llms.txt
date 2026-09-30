@@ -1,0 +1,19 @@
+# mcp-lint
+
+> A CLI, library, and GitHub Action that lints and grades Model Context Protocol (MCP) servers. It connects over stdio, Streamable HTTP, or HTTP+SSE (or reads a saved tools/list result), runs 21 rules over tools, prompts, and resources, and prints a 0 to 100 score with a letter grade. Reports come as text, JSON, Markdown, or SARIF 2.1.0. Exit codes: 0 passed, 1 below the minimum score, 2 usage or connection error.
+
+Install with `npm install -g @superintelligenceco/mcp-lint`, run once with `npx @superintelligenceco/mcp-lint`, download a standalone executable with `curl -fsSL https://raw.githubusercontent.com/superintelligenceco/mcp-lint/main/install.sh | sh`, or use the image `ghcr.io/superintelligenceco/mcp-lint`.
+
+## Docs
+
+- [README](https://github.com/superintelligenceco/mcp-lint/blob/main/README.md): usage, options, configuration, scoring, and the full rule reference
+- [Documentation site](https://superintelligenceco.github.io/mcp-lint/): getting started, architecture, FAQ, and design decisions
+- [Changelog](https://github.com/superintelligenceco/mcp-lint/blob/main/CHANGELOG.md)
+- [GitHub Action](https://github.com/superintelligenceco/mcp-lint/blob/main/action.yml): inputs `command`, `url`, `headers`, `file`, `config`, `min-score`, `sarif-file`, `upload-sarif`; outputs `score`, `grade`, `passed`
+
+## Source
+
+- [src/rules/](https://github.com/superintelligenceco/mcp-lint/tree/main/src/rules): one file per rule category (schema, description, injection, capability, naming)
+- [src/score.ts](https://github.com/superintelligenceco/mcp-lint/blob/main/src/score.ts): the scoring model
+- [src/collect.ts](https://github.com/superintelligenceco/mcp-lint/blob/main/src/collect.ts): connecting to a server and collecting a snapshot
+- [examples/](https://github.com/superintelligenceco/mcp-lint/tree/main/examples): sample snapshots, a config file, and a workflow

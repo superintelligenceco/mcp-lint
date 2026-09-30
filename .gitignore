@@ -8,3 +8,7 @@ coverage/
 .env.*
 mcp-lint.sarif
 mcp-lint-report.json
+site/
+out/
+reports/
+.stryker-tmp/

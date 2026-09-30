@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: If you use mcp-lint in your work, please cite it as below.
+title: "mcp-lint: lint and grade Model Context Protocol servers"
+type: software
+authors:
+  - family-names: Fakhri
+    given-names: Raphael
+repository-code: https://github.com/superintelligenceco/mcp-lint
+url: https://superintelligenceco.github.io/mcp-lint/
+license: Apache-2.0
+version: 0.2.0
+date-released: 2026-09-30
+keywords:
+  - mcp
+  - model-context-protocol
+  - linter
+  - prompt-injection
+  - sarif
