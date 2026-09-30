@@ -1,0 +1,10 @@
+node_modules/
+dist/
+coverage/
+*.log
+*.tgz
+.DS_Store
+.env
+.env.*
+mcp-lint.sarif
+mcp-lint-report.json

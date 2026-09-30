@@ -1,0 +1,63 @@
+{
+  "name": "mcp-lint",
+  "version": "0.1.0",
+  "description": "Lint and grade Model Context Protocol (MCP) servers: schemas, descriptions, prompt-injection surfaces, and dangerous capabilities.",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "lint",
+    "linter",
+    "security",
+    "sarif",
+    "cli"
+  ],
+  "license": "Apache-2.0",
+  "author": "superintelligenceco contributors",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/superintelligenceco/mcp-lint.git"
+  },
+  "homepage": "https://github.com/superintelligenceco/mcp-lint#readme",
+  "bugs": "https://github.com/superintelligenceco/mcp-lint/issues",
+  "type": "module",
+  "bin": {
+    "mcp-lint": "dist/cli.js"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "biome ci .",
+    "format": "biome format --write .",
+    "check": "biome check --write .",
+    "test": "vitest run",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.31.0",
+    "ajv": "^8.20.0",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.14",
+    "@types/node": "^22.20.4",
+    "typescript": "^5.9.3",
+    "vitest": "^5.0.2"
+  }
+}
