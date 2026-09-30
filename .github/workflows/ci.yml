@@ -55,6 +55,31 @@ jobs:
           node dist/cli.js --file examples/clean-server.json
           node dist/cli.js -- node test/fixtures/server.mjs clean
 
+  bench:
+    name: Benchmark (fail on a 2x slowdown)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Compare with bench/baseline.json
+        run: npm run --silent bench | tee -a "$GITHUB_STEP_SUMMARY"
+
+  actionlint:
+    name: actionlint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: raven-actions/actionlint@3d39aea434753780c3b3d4a1a31c854b4dbf49d7 # v2.2.0
+
   action:
     name: Action self-test
     runs-on: ubuntu-latest
