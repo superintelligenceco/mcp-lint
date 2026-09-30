@@ -1,0 +1,86 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  lint:
+    name: Lint and typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Biome (format and lint)
+        run: npm run lint
+      - name: TypeScript
+        run: npm run typecheck
+
+  test:
+    name: Test (Node ${{ matrix.node }}, ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        node: [22, 24]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm test
+      - name: Smoke-test the built CLI
+        run: |
+          node dist/cli.js --version
+          node dist/cli.js --file examples/clean-server.json
+          node dist/cli.js -- node test/fixtures/server.mjs clean
+
+  action:
+    name: Action self-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Lint the clean fixture server over stdio
+        id: clean
+        uses: ./
+        with:
+          command: node test/fixtures/server.mjs clean
+          sarif-file: clean.sarif
+      - name: Lint the messy snapshot without failing the job
+        id: messy
+        uses: ./
+        with:
+          file: examples/messy-server.json
+          min-score: "0"
+          sarif-file: messy.sarif
+      - name: Check outputs
+        env:
+          CLEAN_GRADE: ${{ steps.clean.outputs.grade }}
+          MESSY_GRADE: ${{ steps.messy.outputs.grade }}
+        run: |
+          test "$CLEAN_GRADE" = "A"
+          test "$MESSY_GRADE" = "F"
+          test -s clean.sarif
+          test -s messy.sarif
