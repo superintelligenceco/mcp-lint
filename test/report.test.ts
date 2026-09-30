@@ -30,6 +30,14 @@ describe("text report", () => {
     const out = formatText({ result: lint(snap({ tools: [goodTool()] })), minScore: 70 });
     expect(out).toContain("No problems found.");
     expect(out).toContain("Passed");
+    expect(out).toContain("(0 errors, 0 warnings, 0 info)");
+  });
+
+  it("uses the singular for a count of one", () => {
+    const one = lint(snap({ tools: [goodTool({ description: "Too short." })] }));
+    expect(one.counts.warning).toBe(1);
+    expect(formatText({ result: one, minScore: 70 })).toContain("1 warning,");
+    expect(formatMarkdown({ result: one, minScore: 70 })).toContain("1 warning,");
   });
 });
 

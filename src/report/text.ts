@@ -1,6 +1,13 @@
 import type { Finding, Severity } from "../types.js";
 import { VERSION } from "../version.js";
-import { describeTarget, inventory, passed, type ReportContext, serverLabel } from "./common.js";
+import {
+  countsSummary,
+  describeTarget,
+  inventory,
+  passed,
+  type ReportContext,
+  serverLabel,
+} from "./common.js";
 
 const CODES = { red: 31, yellow: 33, blue: 34, green: 32, bold: 1, dim: 2 } as const;
 type Style = keyof typeof CODES;
@@ -35,12 +42,11 @@ export function formatText(ctx: ReportContext, color = false): string {
   }
   if (result.findings.length === 0) lines.push(paint("green", "No problems found."), "");
 
-  const { error, warning, info } = result.counts;
   const gradeStyle: Style = result.score >= 80 ? "green" : result.score >= 60 ? "yellow" : "red";
   lines.push(
     `${paint("bold", "Score")} ${paint(gradeStyle, `${result.score}/100`)}  ` +
       `${paint("bold", "Grade")} ${paint(gradeStyle, result.grade)}  ` +
-      paint("dim", `(${error} errors, ${warning} warnings, ${info} info)`),
+      paint("dim", `(${countsSummary(result)})`),
   );
   lines.push(
     passed(ctx)

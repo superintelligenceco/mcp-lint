@@ -1,4 +1,11 @@
-import { describeTarget, inventory, passed, type ReportContext, serverLabel } from "./common.js";
+import {
+  countsSummary,
+  describeTarget,
+  inventory,
+  passed,
+  type ReportContext,
+  serverLabel,
+} from "./common.js";
 
 const cell = (s: string) => s.replace(/\|/g, "\\|").replace(/\r?\n/g, " ");
 
@@ -11,7 +18,7 @@ export function formatMarkdown(ctx: ReportContext): string {
     `### mcp-lint: grade ${result.grade} (${result.score}/100)`,
     "",
     `${label ? `\`${label}\`, ` : ""}${inventory(result.snapshot)}. ` +
-      `${result.counts.error} errors, ${result.counts.warning} warnings, ${result.counts.info} info. ` +
+      `${countsSummary(result)}. ` +
       `Minimum score ${ctx.minScore}: **${status}**.`,
     "",
   ];
