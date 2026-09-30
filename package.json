@@ -49,7 +49,8 @@
     "test": "vitest run",
     "prepublishOnly": "npm run build",
     "test:coverage": "vitest run --coverage",
-    "bench": "node bench/lint.bench.mjs"
+    "bench": "node bench/lint.bench.mjs",
+    "mutation": "stryker run"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.31.0",
@@ -58,6 +59,8 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.14",
+    "@stryker-mutator/core": "^10.0.0",
+    "@stryker-mutator/vitest-runner": "^10.0.0",
     "@types/node": "^22.20.4",
     "@vitest/coverage-v8": "^5.0.2",
     "fast-check": "^4.10.2",
