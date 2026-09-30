@@ -15,7 +15,7 @@ inputs:
     required: false
     default: ""
   headers:
-    description: HTTP headers for `url`, one `Name: value` per line.
+    description: "HTTP headers for `url`, one `Name: value` per line."
     required: false
     default: ""
   file:
@@ -39,7 +39,7 @@ inputs:
     required: false
     default: ""
   upload-sarif:
-    description: Upload the SARIF report to GitHub code scanning. Requires `security-events: write`.
+    description: "Upload the SARIF report to GitHub code scanning. Requires `security-events: write`."
     required: false
     default: "false"
   node-version:
