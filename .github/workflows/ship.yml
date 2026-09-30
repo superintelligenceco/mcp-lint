@@ -1,0 +1,141 @@
+name: Ship
+
+# Builds the downloadable artifacts: standalone executables for four platforms, the npm package
+# tarball, and SHA256SUMS.
+# - workflow_dispatch: uploads them as workflow run artifacts only.
+# - push of a v* tag: also attaches them to the GitHub Release for that tag.
+# - workflow_call: release.yml calls this when release-please creates a release, because a tag
+#   that release-please pushes with GITHUB_TOKEN does not trigger the tag event above.
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      tag:
+        description: Release tag to attach the assets to.
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+env:
+  BUN_VERSION: 1.4.2
+
+jobs:
+  binary:
+    name: Binary (${{ matrix.asset }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            asset: mcp-lint-linux-x64
+          - os: ubuntu-24.04-arm
+            asset: mcp-lint-linux-arm64
+          - os: macos-latest
+            asset: mcp-lint-darwin-arm64
+          - os: windows-latest
+            asset: mcp-lint-windows-x64.exe
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ inputs.tag || github.ref }}
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+      - run: npm ci
+      - name: Compile
+        shell: bash
+        env:
+          ASSET: ${{ matrix.asset }}
+        run: node scripts/compile.mjs "out/$ASSET"
+      - name: Smoke-test the executable
+        shell: bash
+        env:
+          ASSET: ${{ matrix.asset }}
+        run: |
+          bin="out/$ASSET"
+          "$bin" --version
+          "$bin" --no-color --json clean.json -- node test/fixtures/server.mjs clean
+          grep -q '"grade": "A"' clean.json
+          "$bin" --no-color --file examples/messy-server.json --min-score 0 --json messy.json
+          grep -q '"grade": "F"' messy.json
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ${{ matrix.asset }}
+          path: out/${{ matrix.asset }}
+          if-no-files-found: error
+
+  npm-package:
+    name: npm package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ inputs.tag || github.ref }}
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Pack
+        run: |
+          mkdir out
+          tarball=$(npm pack --pack-destination out --silent)
+          mv "out/$tarball" out/mcp-lint.tgz
+      - name: Smoke-test a global install of the tarball
+        run: |
+          npm install --global --prefix "$RUNNER_TEMP/global" ./out/mcp-lint.tgz
+          "$RUNNER_TEMP/global/bin/mcp-lint" --version
+          "$RUNNER_TEMP/global/bin/mcp-lint" --no-color -- node test/fixtures/server.mjs clean
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: mcp-lint.tgz
+          path: out/mcp-lint.tgz
+          if-no-files-found: error
+
+  publish:
+    name: Checksums and release assets
+    needs: [binary, npm-package]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          path: assets
+          merge-multiple: true
+      - name: Write SHA256SUMS
+        working-directory: assets
+        run: |
+          chmod +x mcp-lint-linux-* mcp-lint-darwin-*
+          sha256sum mcp-lint-* mcp-lint.tgz > SHA256SUMS
+          cat SHA256SUMS
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: mcp-lint-release
+          path: assets/
+          if-no-files-found: error
+      - name: Attach assets to the GitHub Release
+        if: ${{ inputs.tag != '' || github.ref_type == 'tag' }}
+        working-directory: assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          if ! gh release view "$TAG" > /dev/null 2>&1; then
+            gh release create "$TAG" --verify-tag --title "$TAG" --generate-notes
+          fi
+          gh release upload "$TAG" --clobber mcp-lint-* mcp-lint.tgz SHA256SUMS
