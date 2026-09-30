@@ -7,6 +7,9 @@ updates:
     groups:
       dev-dependencies:
         dependency-type: development
+    ignore:
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
     commit-message:
       prefix: chore
       include: scope
