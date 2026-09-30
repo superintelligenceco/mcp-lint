@@ -1,0 +1,79 @@
+{
+  "tools": [
+    {
+      "name": "get_forecast",
+      "description": "Returns the weather forecast for a city for the next 1 to 7 days, as a list of daily highs, lows, and conditions.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "city": {
+            "type": "string",
+            "description": "City name, for example 'Lisbon'."
+          },
+          "days": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 7,
+            "description": "Number of days to forecast."
+          }
+        },
+        "required": ["city"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "save_note",
+      "description": "Saves a short text note to the user's notebook and returns the note ID. Overwrites a note with the same title.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 80,
+            "description": "Note title, unique per notebook."
+          },
+          "body": {
+            "type": "string",
+            "description": "Note text in Markdown."
+          }
+        },
+        "required": ["title", "body"]
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": true
+      }
+    }
+  ],
+  "resources": [
+    {
+      "uri": "notes://index",
+      "name": "Note index",
+      "description": "Titles and IDs of every saved note.",
+      "mimeType": "application/json"
+    }
+  ],
+  "resourceTemplates": [],
+  "prompts": [
+    {
+      "name": "summarize_forecast",
+      "description": "Summarizes a forecast in one friendly paragraph.",
+      "arguments": [
+        {
+          "name": "city",
+          "description": "City to summarize.",
+          "required": true
+        }
+      ]
+    }
+  ],
+  "server": {
+    "name": "fixture-clean",
+    "version": "1.0.0"
+  }
+}

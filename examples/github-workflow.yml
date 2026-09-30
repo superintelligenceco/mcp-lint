@@ -1,0 +1,33 @@
+# Copy this file to .github/workflows/mcp-lint.yml in your MCP server's repository.
+name: mcp-lint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  mcp-lint:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - run: npm ci && npm run build
+      - name: Lint the MCP server
+        id: lint
+        uses: superintelligenceco/mcp-lint@v0.1.0
+        with:
+          command: node dist/server.js
+          min-score: "80"
+          upload-sarif: "true"
+      - run: echo "mcp-lint grade ${{ steps.lint.outputs.grade }} (${{ steps.lint.outputs.score }}/100)"

@@ -1,0 +1,11 @@
+{
+  "minScore": 80,
+  "rules": {
+    "capability/shell-exec": "error",
+    "naming/inconsistent-style": "off"
+  },
+  "ignoreTools": ["debug_dump"],
+  "options": {
+    "descriptionMinLength": 30
+  }
+}
