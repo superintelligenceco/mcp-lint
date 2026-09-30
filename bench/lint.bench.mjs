@@ -27,21 +27,32 @@ const large = {
 };
 const text = JSON.stringify(large);
 
-/** Median milliseconds per call over several timed batches, after a warm-up. */
-function measure(fn, batch = 20, rounds = 15) {
-  for (let i = 0; i < batch * 3; i++) fn();
-  const samples = [];
-  for (let r = 0; r < rounds; r++) {
+/** Fastest milliseconds per call over timed batches, after a warm-up. The two functions run in
+ * alternating batches so that a busy machine slows both of them alike, and the fastest batch is
+ * the one least disturbed by other processes. */
+function measurePair(a, b, batch = 3, rounds = 15) {
+  for (let i = 0; i < batch * 3; i++) {
+    a();
+    b();
+  }
+  const time = (fn) => {
     const start = performance.now();
     for (let i = 0; i < batch; i++) fn();
-    samples.push((performance.now() - start) / batch);
+    return (performance.now() - start) / batch;
+  };
+  let bestA = Number.POSITIVE_INFINITY;
+  let bestB = Number.POSITIVE_INFINITY;
+  for (let r = 0; r < rounds; r++) {
+    bestA = Math.min(bestA, time(a));
+    bestB = Math.min(bestB, time(b));
   }
-  samples.sort((a, b) => a - b);
-  return samples[Math.floor(samples.length / 2)];
+  return [bestA, bestB];
 }
 
-const referenceMs = measure(() => JSON.parse(text));
-const lintMs = measure(() => lint(large));
+const [referenceMs, lintMs] = measurePair(
+  () => JSON.stringify(JSON.parse(text)),
+  () => lint(large),
+);
 const ratio = lintMs / referenceMs;
 const result = {
   tools: large.tools.length,
@@ -51,7 +62,7 @@ const result = {
 };
 
 const lines = [
-  "| Benchmark | Median |",
+  "| Benchmark | Fastest batch |",
   "| --- | --- |",
   `| lint, ${result.tools} tools | ${result.lintMs} ms |`,
   `| reference JSON round-trip | ${result.referenceMs} ms |`,
