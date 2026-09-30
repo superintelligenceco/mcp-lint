@@ -1,6 +1,6 @@
 name: Ship
 
-# Builds the downloadable artifacts: standalone executables for four platforms, the npm package
+# Builds the downloadable artifacts: standalone executables for five platforms, the npm package
 # tarball, SPDX SBOMs, SHA256SUMS, and the multi-arch container image.
 # - workflow_dispatch: builds everything and keeps the files as workflow run artifacts only.
 # - push of a v* tag: also creates the GitHub Release from CHANGELOG.md, attaches the files with
@@ -31,6 +31,8 @@ jobs:
             asset: mcp-lint-linux-arm64
           - os: macos-latest
             asset: mcp-lint-darwin-arm64
+          - os: macos-15-intel
+            asset: mcp-lint-darwin-x64
           - os: windows-latest
             asset: mcp-lint-windows-x64.exe
     steps:
@@ -219,3 +221,30 @@ jobs:
           fi
           cd assets
           gh release upload "$TAG" --clobber ./*
+
+  verify-install:
+    name: Install from the release (${{ matrix.os }})
+    needs: publish
+    if: ${{ github.ref_type == 'tag' }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, ubuntu-24.04-arm, macos-latest, macos-15-intel]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Run install.sh for this tag
+        env:
+          MCP_LINT_VERSION: ${{ github.ref_name }}
+          MCP_LINT_INSTALL_DIR: ${{ runner.temp }}/bin
+        run: sh install.sh
+      - name: Lint the messy example with the installed executable
+        env:
+          BIN: ${{ runner.temp }}/bin/mcp-lint
+          TAG: ${{ github.ref_name }}
+        run: |
+          test "v$("$BIN" --version)" = "$TAG"
+          "$BIN" --no-color --file examples/messy-server.json --min-score 0 --json report.json
+          grep -q '"grade": "F"' report.json
