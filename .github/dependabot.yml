@@ -10,6 +10,11 @@ updates:
     ignore:
       - dependency-name: "@types/node"
         update-types: ["version-update:semver-major"]
+      # Stryker's vitest runner does not see per-test coverage under Vitest 5 yet.
+      - dependency-name: "vitest"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@vitest/coverage-v8"
+        update-types: ["version-update:semver-major"]
     commit-message:
       prefix: chore
       include: scope

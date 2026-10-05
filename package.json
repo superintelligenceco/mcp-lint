@@ -62,10 +62,10 @@
     "@stryker-mutator/core": "^10.0.0",
     "@stryker-mutator/vitest-runner": "^10.0.0",
     "@types/node": "^22.20.4",
-    "@vitest/coverage-v8": "^5.0.2",
+    "@vitest/coverage-v8": "^4.1.11",
     "fast-check": "^4.10.2",
     "typescript": "^7.0.2",
-    "vitest": "^5.0.2"
+    "vitest": "^4.1.11"
   },
   "overrides": {
     "qs": "^6.16.0"
