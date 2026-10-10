@@ -26,10 +26,12 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: ${{ matrix.node }}
+      # npm 10, bundled with Node 22, crashes in its peer-set resolution on this tree
+      # ("Cannot read properties of null (reading 'edgesOut')") when there is no lockfile.
       - name: Install the newest versions allowed by package.json
         run: |
           rm package-lock.json
-          npm install --no-audit --no-fund
+          npx -y npm@11 install --no-audit --no-fund
           npm ls @modelcontextprotocol/sdk ajv zod
       - run: npm run typecheck
       - run: npm run build
